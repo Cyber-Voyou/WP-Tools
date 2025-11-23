@@ -1,12 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import logging
 from typing import Any, Dict, List
 from urllib.parse import urljoin
 
 import requests
 
 from .exceptions import WPAuthenticationError, WPRequestError
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -42,7 +46,11 @@ class WPAdminClient:
             "testcookie": "1",
         }
 
+        logger.debug("Attempting login at %s with user %s", login_url, creds.username)
         response = self._session.post(login_url, data=payload, timeout=creds.timeout, allow_redirects=True)
+
+        logger.debug("Login response status: %s", response.status_code)
+        logger.debug("Received cookies: %s", list(response.cookies.keys()))
 
         if not self._has_auth_cookie(response.cookies):
             raise WPAuthenticationError("Unable to authenticate with provided credentials.")
@@ -51,11 +59,13 @@ class WPAdminClient:
 
     def fetch_json(self, path: str, params: Dict[str, Any] | None = None) -> Any:
         url = urljoin(self._normalized_base_url, path)
+        logger.debug("Fetching JSON from %s with params %s", url, params)
         response = self.session.get(url, params=params, timeout=self.credentials.timeout)
         if not response.ok:
             raise WPRequestError(
                 f"Request to {url} failed with status {response.status_code}: {response.text}"
             )
+        logger.debug("Response status for %s: %s", url, response.status_code)
         return response.json()
 
     def export_content(self) -> Dict[str, Any]:
@@ -83,6 +93,7 @@ class WPAdminClient:
         while True:
             page_params = {**params, "page": page}
             url = urljoin(self._normalized_base_url, path)
+            logger.debug("Fetching collection page %s from %s with params %s", page, url, page_params)
             response = self.session.get(url, params=page_params, timeout=self.credentials.timeout)
             if not response.ok:
                 raise WPRequestError(
@@ -90,9 +101,11 @@ class WPAdminClient:
                 )
 
             batch = response.json()
+            logger.debug("Received %s items on page %s", len(batch), page)
             items.extend(batch)
 
             total_pages = int(response.headers.get("X-WP-TotalPages", 1))
+            logger.debug("Total pages for %s: %s", url, total_pages)
             if page >= total_pages:
                 break
             page += 1

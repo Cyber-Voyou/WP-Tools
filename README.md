@@ -32,6 +32,17 @@ python -m wptools.cli \
   --output export-wordpress.php
 ```
 
+Pour obtenir des informations de diagnostic supplémentaires (requêtes HTTP, pages paginées, cookies retournés), ajoutez l'option `--debug` :
+
+```bash
+python -m wptools.cli \
+  --url https://votre-site-wordpress.com \
+  --username admin \
+  --password 'votre-mot-de-passe' \
+  --output export-wordpress.php \
+  --debug
+```
+
 La commande :
 1. Ouvre une session sur `wp-login.php` avec le compte administrateur.
 2. Récupère le contenu exposé par l'API REST.

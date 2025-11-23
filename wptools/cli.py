@@ -16,11 +16,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--password", required=True, help="Administrator password")
     parser.add_argument("--output", default="wordpress-export.php", help="Path to write the PHP export file")
     parser.add_argument("--timeout", type=int, default=10, help="HTTP timeout in seconds")
+    parser.add_argument("--debug", action="store_true", help="Enable debug logging")
     return parser.parse_args(argv)
 
 
 def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
+    if args.debug:
+        import logging
+
+        logging.basicConfig(level=logging.DEBUG, format="[%(levelname)s] %(message)s")
     creds = WPAdminCredentials(
         base_url=args.url,
         username=args.username,
